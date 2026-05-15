@@ -205,6 +205,13 @@ attach_app_list_namespace(struct desktop_shell *shell)
 	assert(false == context->isAppListNamespaceAttached);
 	if (context && context->app_list_pidfd >= 0) {
 		assert(context->weston_pidfd >= 0);
+		/* Worker threads spawned by libraries (e.g. librsvg/rayon) re-share
+		 * fs_struct via pthread_create's CLONE_FS; setns(CLONE_NEWNS) needs
+		 * fs->users == 1, so unshare here before every setns. */
+		if (unshare(CLONE_FS) == -1) {
+			shell_rdp_debug_error(shell, "attach_app_list_namespace: unshare(CLONE_FS) failed %s\n", strerror(errno));
+			return;
+		}
 		if (setns(context->app_list_pidfd, 0) == -1) {
 			shell_rdp_debug_error(shell, "attach_app_list_namespace failed %s\n", strerror(errno));
 		} else {
