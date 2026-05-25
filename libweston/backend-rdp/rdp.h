@@ -472,4 +472,26 @@ is_window_shadow_remoting_disabled(RdpPeerContext *peerCtx)
 			(peerCtx->clientStatusFlags & TS_RAIL_CLIENTSTATUS_WINDOW_RESIZE_MARGIN_SUPPORTED));
 }
 
+static inline bool
+should_strip_window_shadow(RdpPeerContext *peerCtx,
+			   struct weston_surface_rail_state *rail_state)
+{
+	struct rdp_backend *b = peerCtx->rdpBackend;
+
+	if (is_window_shadow_remoting_disabled(peerCtx))
+		return true;
+
+	if (!b->rdprail_shell_api || !b->rdprail_shell_api->get_window_geometry)
+		return false;
+
+	if (rail_state->isWindowSnapped)
+		return true;
+
+	if (rail_state->showState_requested == RDP_WINDOW_SHOW_MAXIMIZED ||
+	    rail_state->showState_requested == RDP_WINDOW_SHOW_FULLSCREEN)
+		return true;
+
+	return false;
+}
+
 #endif
